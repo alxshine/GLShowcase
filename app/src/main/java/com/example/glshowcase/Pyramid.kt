@@ -19,14 +19,25 @@ var triangleCoords = floatArrayOf(     // in counterclockwise order:
 class Pyramid {
 
     // Set color with red, green, blue and alpha (opacity) values
-    val color = floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
-    val drawOrder = shortArrayOf(
+    private val color = floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
+    private val edgeColor = floatArrayOf(0.4f, 0.5f, 0f, 1f)
+    private val faceOrder = shortArrayOf(
         0, 1, 3,  // front
         0, 1, 2,  // left
         0, 2, 3,  // back
         0, 3, 4,  // right
         1, 2, 3,  // bottom first half
         2, 3, 4   // bottom second half
+    )
+    private val edgeOrder = shortArrayOf(
+        0, 1,
+        0, 2,
+        0, 3,
+        0, 4,
+        1, 2,
+        1, 3,
+        2, 4,
+        3, 4
     )
 
     private var vertexBuffer: FloatBuffer =
@@ -44,11 +55,20 @@ class Pyramid {
             }
         }
 
-    private var elementBuffer: ShortBuffer =
-        ByteBuffer.allocateDirect(drawOrder.size * 2).run {
+    private var faceBuffer: ShortBuffer =
+        ByteBuffer.allocateDirect(faceOrder.size * 2).run {
             order(ByteOrder.nativeOrder())
             asShortBuffer().apply {
-                put(drawOrder)
+                put(faceOrder)
+                position(0)
+            }
+        }
+
+    private var edgeBuffer: ShortBuffer =
+        ByteBuffer.allocateDirect(edgeOrder.size * 2).run {
+            order(ByteOrder.nativeOrder())
+            asShortBuffer().apply {
+                put(edgeOrder)
                 position(0)
             }
         }
@@ -97,45 +117,46 @@ class Pyramid {
         // Add program to OpenGL ES environment
         GLES20.glUseProgram(mProgram)
 
-        // get handle to vertex shader's vPosition member
-        positionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition").also {
-
-
-            // Prepare the triangle coordinate data
-            GLES20.glVertexAttribPointer(
-                it,
-                COORDS_PER_VERTEX,
-                GLES20.GL_FLOAT,
-                true,
-                0,
-                vertexBuffer
-            )
-
-            // Enable a handle to the triangle vertices
-            GLES20.glEnableVertexAttribArray(it)
-        }
-
-        // get handle to fragment shader's vColor member
-        colorHandle = GLES20.glGetUniformLocation(mProgram, "vColor").also {
-            // Set color for drawing the triangle
-            GLES20.glUniform4fv(it, 1, color, 0)
-        }
-
+        // projection matrix is same for edges and faces
         mvpMatrixHandle =
             GLES20.glGetUniformLocation(mProgram, "uMVPMatrix").also {
                 GLES20.glUniformMatrix4fv(it, 1, false, mvpMatrix, 0)
             }
 
-        // Draw the triangle
+        // get handle for position and color
+        positionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition")
+        colorHandle = GLES20.glGetUniformLocation(mProgram, "vColor")
+
+        // set buffer for drawing faces
+        GLES20.glVertexAttribPointer(
+            positionHandle,
+            COORDS_PER_VERTEX,
+            GLES20.GL_FLOAT,
+            false,
+            0,
+            vertexBuffer
+        )
+        GLES20.glEnableVertexAttribArray(positionHandle)
+
+        // draw faces
+        GLES20.glUniform4fv(colorHandle, 1, color, 0)
         GLES20.glDrawElements(
             GLES20.GL_TRIANGLES,
-            drawOrder.size,
+            faceOrder.size,
             GLES20.GL_UNSIGNED_SHORT,
-            elementBuffer
+            faceBuffer
+        )
+
+        // draw edges
+        GLES20.glUniform4fv(colorHandle, 1, edgeColor, 0)
+        GLES20.glDrawElements(
+            GLES20.GL_LINES,
+            edgeOrder.size,
+            GLES20.GL_UNSIGNED_SHORT,
+            edgeBuffer
         )
 
         // Disable vertex array
         GLES20.glDisableVertexAttribArray(positionHandle)
-
     }
 }
