@@ -3,6 +3,8 @@ package com.example.glshowcase
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
+import android.os.SystemClock
+import androidx.core.graphics.rotationMatrix
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
@@ -12,6 +14,7 @@ class GLDemoRenderer : GLSurfaceView.Renderer {
     private val mvpMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
+    private val rotationMatrix = FloatArray(16)
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         GLES20.glClearColor(0f, 0f, 0f, 1f)
@@ -27,12 +30,19 @@ class GLDemoRenderer : GLSurfaceView.Renderer {
     }
 
     override fun onDrawFrame(p0: GL10?) {
+        val scratch = FloatArray(16)
+
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
+        val time = SystemClock.uptimeMillis() % 4000L
+        val angle = 0.090f * time.toInt()
+        Matrix.setRotateM(rotationMatrix, 0, angle, 0f, 0f, -1f)
 
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, -3f, 0f, 0f, 0f, 0f, 1.0f, 0.0f)
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        mTriangle.draw(mvpMatrix)
+        Matrix.multiplyMM(scratch, 0, mvpMatrix, 0, rotationMatrix, 0)
+        mTriangle.draw(scratch)
     }
 }
 

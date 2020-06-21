@@ -10,5 +10,6 @@ class GLDemoSurfaceView(context: Context) : GLSurfaceView(context) {
         setEGLContextClientVersion(2)
         renderer = GLDemoRenderer()
         setRenderer(renderer)
+        renderMode = RENDERMODE_CONTINUOUSLY
     }
 }
