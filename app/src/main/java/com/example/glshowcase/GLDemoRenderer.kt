@@ -4,22 +4,21 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.os.SystemClock
-import androidx.core.graphics.rotationMatrix
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 class GLDemoRenderer : GLSurfaceView.Renderer {
-    private lateinit var mTriangle: Triangle
+    private lateinit var mPyramid: Pyramid
 
     private val mvpMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
-    private val rotationMatrix = FloatArray(16)
+    private val movementMatrix = FloatArray(16)
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         GLES20.glClearColor(0f, 0f, 0f, 1f)
 
-        mTriangle = Triangle()
+        mPyramid = Pyramid()
     }
 
     override fun onSurfaceChanged(unused: GL10?, width: Int, height: Int) {
@@ -36,13 +35,14 @@ class GLDemoRenderer : GLSurfaceView.Renderer {
 
         val time = SystemClock.uptimeMillis() % 4000L
         val angle = 0.090f * time.toInt()
-        Matrix.setRotateM(rotationMatrix, 0, angle, 0f, 0f, -1f)
+        Matrix.setRotateM(movementMatrix, 0, angle, 0f, 1f, 0f)
+        Matrix.translateM(movementMatrix, 0, 0f, -.5f, 0f)
 
-        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, -3f, 0f, 0f, 0f, 0f, 1.0f, 0.0f)
+        Matrix.setLookAtM(viewMatrix, 0, 0f, 1.5f, -6f, 0f, 0f, 0f, 0f, 1f, 0f)
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        Matrix.multiplyMM(scratch, 0, mvpMatrix, 0, rotationMatrix, 0)
-        mTriangle.draw(scratch)
+        Matrix.multiplyMM(scratch, 0, mvpMatrix, 0, movementMatrix, 0)
+        mPyramid.draw(scratch)
     }
 }
 
